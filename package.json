@@ -56,6 +56,8 @@
 		"db:migrate:remote": "NODE_USE_SYSTEM_CA=1 cf d1 migrations apply e5e9a5e2-46c6-4d7e-be0b-a273bd4a7345",
 		"db:seed:local": "node scripts/seed-local.ts",
 		"db:reset:local": "node scripts/reset-local.ts",
-		"db:query:local": "cf d1 raw e5e9a5e2-46c6-4d7e-be0b-a273bd4a7345 --local --persist-to .local-state --sql"
+		"db:query:local": "cf d1 raw e5e9a5e2-46c6-4d7e-be0b-a273bd4a7345 --local --persist-to .local-state --sql",
+		"db:seed:remote": "node scripts/seed-remote.ts",
+		"release": "npm run db:migrate:remote && npm run db:seed:remote -- --confirm-remote && npm run deploy"
 	}
 }

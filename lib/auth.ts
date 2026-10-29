@@ -1,5 +1,5 @@
 // Server-only (never imported by client components). Change this before the event.
-export const ADMIN_PIN = '1234';
+export const ADMIN_PIN = '6991';
 export const SESSION_COOKIE = 'dg_session';
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 
