@@ -3,7 +3,8 @@ import { createTestDb } from './test-db.ts';
 import { seedTournament } from './seed.ts';
 import { loadState } from './storage.ts';
 import { recordResult } from './service.ts';
-import { championName, eligibleMatches, matchLabel, standings } from './selectors.ts';
+import { playOut } from './play.test-helper.ts';
+import { championName, divisionProgress, eligibleMatches, matchLabel, standings } from './selectors.ts';
 
 describe('selectors', () => {
   it('labels matches and finds no champion before play', async () => {
@@ -28,5 +29,16 @@ describe('selectors', () => {
     expect(ranks.get(m.opponent1!.id!)).toBe(1);
     expect(ranks.get(m.opponent2!.id!)).toBe(8);
     expect(ranks.size).toBe(8);
+  });
+
+  it('tracks division progress, counting the reset only when forced', async () => {
+    const db = createTestDb();
+    await seedTournament(db);
+    let s = await loadState(db);
+    expect(divisionProgress(s.brackets, s.app.divisions.femmes.stageId)).toEqual({ played: 0, total: 14 });
+    s = await playOut(db, 'femmes', () => 1);
+    expect(divisionProgress(s.brackets, s.app.divisions.femmes.stageId)).toEqual({ played: 14, total: 14 });
+    s = await playOut(db, 'mascs', (label) => (label === 'Grand Final' ? 2 : 1), 40);
+    expect(divisionProgress(s.brackets, s.app.divisions.mascs.stageId)).toEqual({ played: 15, total: 15 });
   });
 });

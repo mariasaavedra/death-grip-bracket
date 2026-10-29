@@ -1,8 +1,15 @@
 'use client';
 
 import { useEffect, useId, useRef } from 'react';
+import type { RoundNameGetter } from 'brackets-viewer/dist/types';
 import type { BracketsData } from '../lib/tournament/types.ts';
 import 'brackets-viewer/dist/brackets-viewer.min.css';
+
+/** Round headers without the WB/LB prefix (the group heading already says which bracket). */
+const roundName: RoundNameGetter = (info) => {
+  if (info.groupType === 'final-group') return info.roundNumber === 2 ? 'Grand Final Reset' : 'Grand Final';
+  return info.roundNumber === info.roundCount ? 'Final Round' : `Round ${info.roundNumber}`;
+};
 
 /** Renders one stage of native bracket data with brackets-viewer (browser only). */
 export function BracketViewer({ brackets, stageId }: { brackets: BracketsData; stageId: number | null }) {
@@ -27,7 +34,7 @@ export function BracketViewer({ brackets, stageId }: { brackets: BracketsData; s
           matchGames: brackets.match_game.filter((g) => g.stage_id === stageId),
           participants: brackets.participant.filter((p) => participantIds.has(p.id)),
         },
-        { selector: `#${containerId}`, clear: true },
+        { selector: `#${containerId}`, clear: true, showLowerBracketSlotsOrigin: false, highlightParticipantOnHover: false, customRoundName: roundName },
       );
     })();
     return () => {
@@ -37,10 +44,4 @@ export function BracketViewer({ brackets, stageId }: { brackets: BracketsData; s
 
   if (stageId === null) return <p>Bracket not created yet.</p>;
   return <div id={containerId} ref={ref} className="brackets-viewer" />;
-}
-
-declare global {
-  interface Window {
-    bracketsViewer: { render(data: unknown, config?: Record<string, unknown>): Promise<void> };
-  }
 }

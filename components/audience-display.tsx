@@ -3,8 +3,9 @@
 import { Status } from 'brackets-model';
 import { BracketViewer } from './bracket-viewer.tsx';
 import { Badge } from '@/components/ui/badge';
+import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress';
 import { DIVISION_NAMES } from '../lib/tournament/constants.ts';
-import { championName, matchLabel, participantName } from '../lib/tournament/selectors.ts';
+import { championName, divisionProgress, matchLabel, participantName } from '../lib/tournament/selectors.ts';
 import { useTournamentState } from '../lib/use-tournament-state.ts';
 
 const STATUS_TEXT: Record<number, string> = {
@@ -23,12 +24,24 @@ export function AudienceDisplay() {
   const { app, brackets } = state;
   const { division, mode, matchId } = app.display;
   const stageId = app.divisions[division].stageId;
+  const { played, total } = divisionProgress(brackets, stageId);
   const match = matchId === null ? undefined : brackets.match.find((m) => m.id === matchId);
 
   return (
     <main className="mx-auto max-w-[1800px] p-6">
       <div className="panel min-h-[70vh]">
-        <h1 className="m-0 mb-6 text-5xl">{DIVISION_NAMES[division]}</h1>
+        {mode !== 'bracket' && <h1 className="m-0 mb-6 text-4xl">{DIVISION_NAMES[division]}</h1>}
+        {stageId !== null && (
+          <Progress
+            value={total === 0 ? 0 : (played / total) * 100}
+            className="mb-6 [&_[data-slot=progress-indicator]]:bg-denim [&_[data-slot=progress-track]]:h-3 [&_[data-slot=progress-track]]:rounded-[2px] [&_[data-slot=progress-indicator]]:rounded-[2px] [&_[data-slot=progress-track]]:bg-ink/15"
+          >
+            <ProgressLabel className="label text-sm">
+              {DIVISION_NAMES[division]} — {played} of {total} matches played
+            </ProgressLabel>
+            <ProgressValue className="label ml-auto text-sm" />
+          </Progress>
+        )}
         {offline && (
           <Badge variant="destructive" role="status" className="mb-4">
             Connection lost — showing last known state

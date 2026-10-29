@@ -13,12 +13,14 @@
   /* High-contrast condensed serif for headings (system Didone stack; no web font fetch). */
   --font-display: "Bodoni 72", "Bodoni MT", Didot, "Playfair Display", "Times New Roman", serif;
   /* Heavy grotesk for the bold caps labels. */
+  /* feTurbulence noise tile (ibelick: baseFrequency .65, 3 octaves, stitched). */
+  --grain: url("data:image/svg+xml,%3Csvg viewBox='0 0 600 600' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   --font-label: "Archivo Black", "Helvetica Neue", Arial, sans-serif;
 }
 
 :root {
   color-scheme: light;
-  --background: #ebebec;
+  --background: #fafafa;
   --foreground: #0a0a0a;
   --card: #f4f4f5;
   --card-foreground: #0a0a0a;
@@ -75,13 +77,24 @@
   }
   html {
     @apply font-sans;
+    background: linear-gradient(135deg, #ffffff 0%, #f1f1f2 45%, #d2d2d6 100%) fixed;
   }
   body {
     margin: 0;
     @apply text-foreground;
-    background-color: var(--background);
-    /* Film grain like the poster. */
-    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    background: transparent;
+  }
+  /* Page grain: fixed overlay that sits above the page colour but below all content. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--grain);
+    background-size: 182px;
+    opacity: 0.38;
+    filter: grayscale(1) contrast(1.15);
   }
   h1,
   h2 {
@@ -99,7 +112,22 @@
   }
 }
 
+@keyframes marquee {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
 @layer components {
+  .marquee-track {
+    animation: marquee var(--marquee-seconds, 40s) linear infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
+  }
+
   /* Poster label: heavy caps. */
   .label {
     font-family: var(--font-label);
@@ -108,10 +136,52 @@
     letter-spacing: 0.01em;
   }
 
-  /* Denim-to-navy band with a thin ruled frame (poster footer). */
+  /* Grainy denim -> navy -> denim -> pale gradient band (poster footer). */
   .band {
-    background: linear-gradient(90deg, #4a7bc0 0%, #1b2748 45%, #1b2748 55%, #bcd0ec 100%);
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(
+      90deg,
+      #4f86cc 0%,
+      #7f9bc9 14%,
+      #3a4a70 34%,
+      #1f2a47 46%,
+      #2f4b7e 56%,
+      #4a86d0 68%,
+      #8db3e6 82%,
+      #eef3fb 100%
+    );
     color: #fff;
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.35);
+  }
+  .band::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--grain);
+    background-size: 182px;
+    opacity: 0.45;
+    mix-blend-mode: overlay;
+  }
+  /* Header strip: very dark grey easing to a slightly lighter dark grey, with grain. */
+  .band-dark {
+    position: relative;
+    isolation: isolate;
+    background: linear-gradient(90deg, #0c0c0d 0%, #1a1a1c 50%, #2b2b2e 100%);
+    color: #fff;
+  }
+  .band-dark::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: var(--grain);
+    background-size: 182px;
+    opacity: 0.3;
+    filter: grayscale(1);
   }
   .frame {
     border: 1px solid rgb(255 255 255 / 0.85);
@@ -122,7 +192,7 @@
 
   .panel {
     border: 1px solid var(--color-ink);
-    background: rgb(244 244 245 / 0.75);
+    background: transparent;
     padding: 1.5rem 2rem;
   }
 
@@ -181,18 +251,115 @@
   }
 }
 
-/* brackets-viewer theming (it exposes CSS variables). */
-.brackets-viewer {
+/*
+ * brackets-viewer theming. The viewer ships its own stylesheet on the same `.brackets-viewer`
+ * selector, so everything here is scoped as `div.brackets-viewer` to win regardless of load order.
+ */
+div.brackets-viewer {
   --primary-background: transparent;
-  --secondary-background: var(--color-mist);
+  --secondary-background: var(--color-navy);
   --match-background: #fff;
   --font-color: var(--color-ink);
   --win-color: var(--color-denim);
   --loss-color: var(--color-foul);
   --label-color: #5a5a60;
-  --hint-color: #5a5a60;
+  --hint-color: #8a8a90;
   --connector-color: var(--color-ink);
+  --connector-border-width: 2px;
   --border-color: var(--color-ink);
   --border-hover-color: var(--color-denim);
-  --text-size: 14px;
+  --border-selected-color: var(--color-denim);
+  --match-border-radius: 2px;
+  --match-width: 16rem;
+  --match-horizontal-padding: 0.9rem;
+  --round-margin: 3rem;
+  --text-size: 1rem;
+  background: transparent;
+  font-family: var(--font-sans), sans-serif;
+}
+div.brackets-viewer h1 {
+  font-family: var(--font-display);
+  font-size: 2.45rem;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+  line-height: 0.95;
+  margin: 0 0 0.75rem;
+}
+div.brackets-viewer .bracket h2 {
+  font-family: var(--font-label);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--color-denim);
+  border-bottom: 1px solid var(--color-ink);
+  padding-bottom: 0.3rem;
+  margin: 1.4rem 0 0.7rem;
+}
+div.brackets-viewer h3 {
+  background: transparent;
+  color: var(--color-ink);
+  border: 1px solid var(--color-ink);
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  padding: 0.42rem 0;
+  margin-bottom: 0.3rem;
+}
+div.brackets-viewer .opponents {
+  overflow: hidden;
+  box-shadow: 0 1px 0 rgb(10 10 10 / 0.15);
+}
+div.brackets-viewer .participant {
+  padding: 0.2rem var(--match-horizontal-padding);
+}
+div.brackets-viewer .participant + .participant {
+  border-top: 1px solid var(--border-color);
+}
+/* Each row gets the page's white -> grey gradient plus grain; the grain is a ::before so it can have its own opacity. */
+div.brackets-viewer .participant {
+  position: relative;
+  isolation: isolate;
+  background: linear-gradient(135deg, #ffffff 0%, #e4e4e8 100%);
+}
+div.brackets-viewer .participant::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: var(--grain);
+  background-size: 182px;
+  opacity: 0.35;
+  filter: grayscale(1) contrast(1.15);
+}
+/* Winner rows: a soft, low-contrast denim blend; the grain carries the texture. */
+div.brackets-viewer .participant.win {
+  background: linear-gradient(90deg, #6f94cc 0%, #5b80bb 55%, #4a6ba6 100%);
+}
+div.brackets-viewer .participant.win::before {
+  opacity: 0.6;
+  filter: none;
+  mix-blend-mode: overlay;
+}
+div.brackets-viewer .participant.win .name,
+div.brackets-viewer .participant.win .name > span,
+div.brackets-viewer .participant.win .result {
+  font-weight: 800;
+  color: #fff;
+}
+div.brackets-viewer .participant.loss .name {
+  color: #7a7a80;
+}
+div.brackets-viewer .match {
+  margin: 7px 0;
+}
+div.brackets-viewer .bracket .rounds:not(:last-of-type) {
+  margin-bottom: 10px;
+}
+div.brackets-viewer {
+  --round-margin: 2.25rem;
 }

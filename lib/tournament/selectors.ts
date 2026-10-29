@@ -124,6 +124,21 @@ export function championId(brackets: BracketsData, stageId: number | null): numb
   return null;
 }
 
+/**
+ * Matches with a recorded result out of the matches this division will actually need.
+ * The grand-final reset only counts once the one-loss finalist has forced it.
+ */
+export function divisionProgress(brackets: BracketsData, stageId: number | null): { played: number; total: number } {
+  const matches = stageMatches(brackets, stageId);
+  const finals = matches
+    .filter((m) => groupNumberOf(brackets, m) === 3)
+    .sort((a, b) => roundNumberOf(brackets, a) - roundNumberOf(brackets, b));
+  const [first, reset] = finals;
+  const resetNeeded = !!reset && first?.status >= Status.Completed && first.opponent2?.result === 'win';
+  const counted = matches.filter((m) => m !== reset || resetNeeded);
+  return { played: counted.filter((m) => matchWinnerId(m) !== null).length, total: counted.length };
+}
+
 export function championName(brackets: BracketsData, stageId: number | null): string | null {
   return participantName(brackets, championId(brackets, stageId));
 }

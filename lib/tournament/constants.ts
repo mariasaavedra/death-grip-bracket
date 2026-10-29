@@ -18,3 +18,11 @@ export const STAGE_SETTINGS = {
 } as const;
 
 export const POLL_INTERVAL_MS = 2000;
+
+export const RULES = [
+  'One pin wins',
+  'Elbow stays on the table',
+  'Moving before go is a foul',
+  'Hands slip = reset',
+  "Two losses & you're out",
+] as const;
