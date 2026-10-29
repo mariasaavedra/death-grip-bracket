@@ -55,7 +55,7 @@ describe('display', () => {
   it('persists changes, validates the match division, and gates champion mode', async () => {
     const { seedTournament } = await import('./seed.ts');
     const db = createTestDb();
-    await seedTournament(db);
+    await seedTournament(db, { start: true });
     let s = await loadState(db);
     s = await setDisplay(db, { division: 'mascs', mode: 'matchup', expectedVersion: s.version });
     expect((await loadState(db)).app.display).toMatchObject({ division: 'mascs', mode: 'matchup' });

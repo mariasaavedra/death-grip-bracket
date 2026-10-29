@@ -9,7 +9,7 @@ import { championName, divisionProgress, eligibleMatches, matchLabel, standings 
 describe('selectors', () => {
   it('labels matches and finds no champion before play', async () => {
     const db = createTestDb();
-    await seedTournament(db);
+    await seedTournament(db, { start: true });
     const s = await loadState(db);
     const stageId = s.app.divisions.femmes.stageId;
     expect(championName(s.brackets, stageId)).toBeNull();
@@ -19,7 +19,7 @@ describe('selectors', () => {
 
   it('ranks by losses then wins once results exist; none before', async () => {
     const db = createTestDb();
-    await seedTournament(db);
+    await seedTournament(db, { start: true });
     let s = await loadState(db);
     const stageId = s.app.divisions.femmes.stageId;
     expect(standings(s.brackets, stageId)).toBeNull();
@@ -33,7 +33,7 @@ describe('selectors', () => {
 
   it('tracks division progress, counting the reset only when forced', async () => {
     const db = createTestDb();
-    await seedTournament(db);
+    await seedTournament(db, { start: true });
     let s = await loadState(db);
     expect(divisionProgress(s.brackets, s.app.divisions.femmes.stageId)).toEqual({ played: 0, total: 14 });
     s = await playOut(db, 'femmes', () => 1);

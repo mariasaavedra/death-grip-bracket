@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { ReactNode } from 'react';
 import type { Match } from 'brackets-model';
@@ -18,6 +18,7 @@ import { championName, completedMatches, eligibleMatches, eliminatedIds, matchLa
 import type { BracketsData, CompetitorStatus, DisplayMode, DivisionId, TournamentState } from '../lib/tournament/types.ts';
 import { useTournamentState } from '../lib/use-tournament-state.ts';
 import type { VoteInfo } from '../lib/tournament/votes.ts';
+import type { Contact } from '../lib/tournament/registration.ts';
 import { useVoteInfo } from '../lib/use-vote-info.ts';
 
 type Id = number | string;
@@ -180,6 +181,21 @@ function Console() {
   const [newStatus, setNewStatus] = useState<CompetitorStatus>('active');
   const [matchId, setMatchId] = useState<number | null>(null);
   const [winnerId, setWinnerId] = useState<number | string | null>(null);
+  const [contacts, setContacts] = useState<Record<string, Contact>>({});
+  const version = state?.version;
+
+  // Sign-up details (first name, phone, initials) are admin-only; reload them whenever the roster may have changed.
+  useEffect(() => {
+    const t = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/contacts/${division}`, { cache: 'no-store' });
+        if (res.ok) setContacts(await res.json());
+      } catch {
+        /* keep last known */
+      }
+    }, 0);
+    return () => clearTimeout(t);
+  }, [division, version]);
 
   if (!state) return <main className="p-10 label">Loading…</main>;
 
@@ -316,6 +332,11 @@ function Console() {
               <li key={c.id} className="flex flex-wrap items-center gap-2">
                 {rank !== undefined && <span className="label w-8 text-sm text-denim">#{rank}</span>}
                 <span className="text-lg">{c.name}</span>
+                {contacts[c.id] && (
+                  <span className="text-sm text-muted-foreground">
+                    {contacts[c.id].firstName} · {contacts[c.id].phone} · {contacts[c.id].initials}
+                  </span>
+                )}
                 {c.status === 'alternate' ? (
                   <Badge variant="secondary" className="bg-muted text-muted-foreground">Alternate</Badge>
                 ) : pid !== undefined && eliminated.includes(pid) ? (

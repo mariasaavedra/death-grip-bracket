@@ -64,9 +64,15 @@ function validateRoster(competitors: Competitor[]) {
   }
 }
 
-export function addCompetitor(app: AppState, division: DivisionId, name: unknown, status: unknown): Competitor {
+export function addCompetitor(
+  app: AppState,
+  division: DivisionId,
+  name: unknown,
+  status: unknown,
+  id: string = crypto.randomUUID(),
+): Competitor {
   assertRegistrationOpen(app, division);
-  const competitor: Competitor = { id: crypto.randomUUID(), name: cleanName(name), status: assertStatus(status) };
+  const competitor: Competitor = { id, name: cleanName(name), status: assertStatus(status) };
   const next = [...app.divisions[division].competitors, competitor];
   validateRoster(next);
   app.divisions[division].competitors = next;

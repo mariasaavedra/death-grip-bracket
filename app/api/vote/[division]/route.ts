@@ -20,8 +20,9 @@ export async function GET(req: Request, { params }: Ctx) {
 
 /** Admin: open or close voting. */
 export async function PATCH(req: Request, { params }: Ctx) {
-  const division = assertDivision((await params).division);
+  const { division: raw } = await params;
   return adminJson(req, async (body, db) => {
+    const division = assertDivision(raw);
     await setVotingStatus(db, division, body.status as VotingStatus);
     return getVoteInfo(db, division, { isAdmin: true });
   });
@@ -29,8 +30,9 @@ export async function PATCH(req: Request, { params }: Ctx) {
 
 /** Admin: clear all ballots for the division. */
 export async function DELETE(req: Request, { params }: Ctx) {
-  const division = assertDivision((await params).division);
+  const { division: raw } = await params;
   return adminJson(req, async (_body, db) => {
+    const division = assertDivision(raw);
     await clearVotes(db, division);
     return getVoteInfo(db, division, { isAdmin: true });
   });

@@ -50,7 +50,7 @@ export function AudienceDisplay() {
           </Badge>
         )}
 
-        {mode === 'guide' && <GuideView />}
+        {mode === 'guide' && <GuideView divisions={app.divisions} />}
 
         {mode === 'vote' && <VoteView division={division} />}
 

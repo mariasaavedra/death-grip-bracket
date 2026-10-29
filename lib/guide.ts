@@ -42,3 +42,9 @@ export const GUIDE_SECTIONS: GuideSection[] = [
     ],
   },
 ];
+
+/** Per-division copy for the sign-up sheet. */
+export const DIVISION_SCHEDULE: Record<'femmes' | 'mascs', string> = {
+  femmes: 'Femmes run 10 to 11.',
+  mascs: 'Mascs run 11 to 12.',
+};

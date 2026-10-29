@@ -8,7 +8,7 @@ import { championName, eligibleMatches, eliminatedIds, lossCounts, matchWinnerId
 
 async function seeded() {
   const db = createTestDb();
-  await seedTournament(db);
+  await seedTournament(db, { start: true });
   return db;
 }
 

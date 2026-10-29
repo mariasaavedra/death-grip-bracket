@@ -10,7 +10,7 @@ const V2 = '22222222-2222-4222-8222-222222222222';
 
 async function seeded() {
   const db = createTestDb();
-  await seedTournament(db);
+  await seedTournament(db, { start: true });
   const s = await loadState(db);
   return { db, ids: s.app.divisions.femmes.competitors.map((c) => c.id) };
 }
@@ -97,7 +97,7 @@ describe('voting', () => {
     const i = await info(db);
     expect(winners(i.counts!).sort()).toEqual([ids[0], ids[1]].sort());
     expect(winners(tally({}, i.candidates))).toEqual([]);
-    await resetTournament(db);
+    await resetTournament(db, { start: true });
     const after = await info(db);
     expect(after.total).toBe(0);
     expect(after.status).toBe('closed');

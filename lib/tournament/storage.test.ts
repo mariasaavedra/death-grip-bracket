@@ -34,7 +34,7 @@ describe('storage', () => {
   it('round-trips native bracket records with ids and relationships intact', async () => {
     const { seedTournament } = await import('./seed.ts');
     const db = createTestDb();
-    await seedTournament(db);
+    await seedTournament(db, { start: true });
     const a = await loadState(db);
     const b = await loadState(db);
     expect(b.brackets).toEqual(a.brackets);

@@ -74,7 +74,7 @@ export async function adminJson(
 ): Promise<Response> {
   try {
     if (!(await isAdmin(req.headers.get('cookie')))) throw new ApiError(401, 'Unauthorized');
-    const body = req.method === 'DELETE' ? {} : await readBody(req);
+    const body = req.method === 'DELETE' || req.method === 'GET' ? {} : await readBody(req);
     return Response.json(await run(body, getDb()), { headers: NO_STORE });
   } catch (e) {
     return errorResponse(e);
