@@ -2,6 +2,8 @@
 
 import { Status } from 'brackets-model';
 import { BracketViewer } from './bracket-viewer.tsx';
+import { GuideView } from './guide-view.tsx';
+import { VoteView } from './vote-view.tsx';
 import { Badge } from '@/components/ui/badge';
 import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress';
 import { DIVISION_NAMES } from '../lib/tournament/constants.ts';
@@ -30,8 +32,8 @@ export function AudienceDisplay() {
   return (
     <main className="mx-auto max-w-[1800px] p-6">
       <div className="panel min-h-[70vh]">
-        {mode !== 'bracket' && <h1 className="m-0 mb-6 text-4xl">{DIVISION_NAMES[division]}</h1>}
-        {stageId !== null && (
+        {mode !== 'bracket' && mode !== 'guide' && mode !== 'vote' && <h1 className="m-0 mb-6 text-4xl">{DIVISION_NAMES[division]}</h1>}
+        {stageId !== null && mode !== 'guide' && mode !== 'vote' && (
           <Progress
             value={total === 0 ? 0 : (played / total) * 100}
             className="mb-6 [&_[data-slot=progress-indicator]]:bg-denim [&_[data-slot=progress-track]]:h-3 [&_[data-slot=progress-track]]:rounded-[2px] [&_[data-slot=progress-indicator]]:rounded-[2px] [&_[data-slot=progress-track]]:bg-ink/15"
@@ -47,6 +49,10 @@ export function AudienceDisplay() {
             Connection lost — showing last known state
           </Badge>
         )}
+
+        {mode === 'guide' && <GuideView />}
+
+        {mode === 'vote' && <VoteView division={division} />}
 
         {mode === 'matchup' &&
           (match ? (

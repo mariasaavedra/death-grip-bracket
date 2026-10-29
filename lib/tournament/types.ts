@@ -3,7 +3,7 @@ import type { Database } from 'brackets-model';
 export type DivisionId = 'femmes' | 'mascs';
 export type DivisionStatus = 'registration' | 'active' | 'completed';
 export type CompetitorStatus = 'active' | 'alternate';
-export type DisplayMode = 'matchup' | 'bracket' | 'champion';
+export type DisplayMode = 'guide' | 'matchup' | 'bracket' | 'champion' | 'vote';
 
 export interface Competitor {
   id: string;
@@ -21,6 +21,8 @@ export interface DisplayState {
   division: DivisionId;
   mode: DisplayMode;
   matchId: number | null;
+  /** Director-controlled reveal of the ring-name vote results on the public display. */
+  showVotes: boolean;
 }
 
 export interface AppState {

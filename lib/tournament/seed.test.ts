@@ -31,7 +31,7 @@ describe('seed', () => {
     expect(names.every((n) => n.trim() === n && n.length > 0 && n.length <= 60)).toBe(true);
     expect(names.some((n) => /^(Femme|Masc) \d+$/.test(n))).toBe(false);
     expect(s.brackets.stage.map((st) => st.type)).toEqual(['double_elimination', 'double_elimination']);
-    expect(s.app.display).toEqual({ division: 'femmes', mode: 'bracket', matchId: null });
+    expect(s.app.display).toEqual({ division: 'femmes', mode: 'bracket', matchId: null, showVotes: false });
   });
 
   it('does not overwrite an existing tournament; forced reset clears results', async () => {

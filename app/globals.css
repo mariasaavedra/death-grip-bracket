@@ -183,6 +183,14 @@
     opacity: 0.3;
     filter: grayscale(1);
   }
+  /* Curtain fringe under the guide banner. */
+  .fringe {
+    height: 1.4rem;
+    background: repeating-linear-gradient(90deg, var(--color-ink) 0 1px, transparent 1px 5px);
+    -webkit-mask: linear-gradient(#000 60%, transparent);
+    mask: linear-gradient(#000 60%, transparent);
+    border-top: 2px solid var(--color-ink);
+  }
   .frame {
     border: 1px solid rgb(255 255 255 / 0.85);
     outline: 1px solid rgb(255 255 255 / 0.45);

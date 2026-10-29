@@ -191,7 +191,7 @@ export function resetMatch(db: D1Database, matchId: number, expectedVersion: num
 
 export function setDisplay(
   db: D1Database,
-  input: { division?: unknown; mode?: unknown; matchId?: unknown; expectedVersion: number },
+  input: { division?: unknown; mode?: unknown; matchId?: unknown; showVotes?: unknown; expectedVersion: number },
 ) {
   return mutate(db, input.expectedVersion, async (ctx) => {
     const display = { ...ctx.app.display };
@@ -200,8 +200,12 @@ export function setDisplay(
       if (input.matchId === undefined) display.matchId = null;
     }
     if (input.mode !== undefined) {
-      if (input.mode !== 'matchup' && input.mode !== 'bracket' && input.mode !== 'champion') throw new ApiError(400, 'Unknown display mode');
+      if (!['guide', 'matchup', 'bracket', 'champion', 'vote'].includes(input.mode as string)) throw new ApiError(400, 'Unknown display mode');
       display.mode = input.mode as DisplayMode;
+    }
+    if (input.showVotes !== undefined) {
+      if (typeof input.showVotes !== 'boolean') throw new ApiError(400, 'showVotes must be true or false');
+      display.showVotes = input.showVotes;
     }
     if (input.matchId !== undefined) {
       if (input.matchId === null) display.matchId = null;
@@ -216,6 +220,9 @@ export function setDisplay(
     }
     if (display.mode === 'champion' && ctx.app.divisions[display.division].status !== 'completed') {
       throw new ApiError(409, 'Champion mode requires a completed division');
+    }
+    if (display.mode === 'vote' && ctx.app.divisions[display.division].status === 'registration') {
+      throw new ApiError(409, 'Voting needs a started division');
     }
     ctx.app.display = display;
   });

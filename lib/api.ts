@@ -1,6 +1,7 @@
 import { env } from 'cloudflare:workers';
 import { ADMIN_PIN, readCookie, SESSION_COOKIE, verifySessionToken } from './auth.ts';
 import { ApiError } from './tournament/types.ts';
+import { isVoterId } from './tournament/votes.ts';
 import type { TournamentState } from './tournament/types.ts';
 
 export function getDb(): D1Database {
@@ -50,6 +51,31 @@ export async function mutation(
   try {
     if (!(await isAdmin(req.headers.get('cookie')))) throw new ApiError(401, 'Unauthorized');
     return stateResponse(await run(await readBody(req), getDb()));
+  } catch (e) {
+    return errorResponse(e);
+  }
+}
+
+export const VOTER_COOKIE = 'dg_voter';
+
+export function voterIdFrom(req: Request): string | null {
+  const id = readCookie(req.headers.get('cookie'), VOTER_COOKIE);
+  return isVoterId(id) ? id : null;
+}
+
+export function voterCookie(id: string): string {
+  return `${VOTER_COOKIE}=${id}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${3 * 24 * 60 * 60}`;
+}
+
+/** Admin-only handler for endpoints that don't return tournament state (voting controls). */
+export async function adminJson(
+  req: Request,
+  run: (body: Record<string, unknown>, db: D1Database) => Promise<unknown>,
+): Promise<Response> {
+  try {
+    if (!(await isAdmin(req.headers.get('cookie')))) throw new ApiError(401, 'Unauthorized');
+    const body = req.method === 'DELETE' ? {} : await readBody(req);
+    return Response.json(await run(body, getDb()), { headers: NO_STORE });
   } catch (e) {
     return errorResponse(e);
   }

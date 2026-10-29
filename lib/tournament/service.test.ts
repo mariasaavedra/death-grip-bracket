@@ -62,5 +62,8 @@ describe('display', () => {
     const femmesMatch = s.brackets.match.find((m) => m.stage_id === s.app.divisions.femmes.stageId)!;
     await expect(setDisplay(db, { matchId: femmesMatch.id, expectedVersion: s.version })).rejects.toMatchObject({ status: 400 });
     await expect(setDisplay(db, { mode: 'champion', expectedVersion: s.version })).rejects.toMatchObject({ status: 409 });
+    s = await setDisplay(db, { mode: 'guide', expectedVersion: s.version });
+    expect((await loadState(db)).app.display.mode).toBe('guide');
+    await expect(setDisplay(db, { mode: 'nope', expectedVersion: s.version })).rejects.toMatchObject({ status: 400 });
   });
 });

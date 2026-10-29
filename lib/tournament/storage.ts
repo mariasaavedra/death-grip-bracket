@@ -10,7 +10,7 @@ export function initialSnapshot(): TournamentSnapshot {
         femmes: { stageId: null, status: 'registration', competitors: [] },
         mascs: { stageId: null, status: 'registration', competitors: [] },
       },
-      display: { division: 'femmes', mode: 'matchup', matchId: null },
+      display: { division: 'femmes', mode: 'matchup', matchId: null, showVotes: false },
     },
   };
 }
@@ -26,6 +26,7 @@ function parseSnapshot(raw: string): TournamentSnapshot {
     data.app?.display &&
     DIVISION_IDS.every((d) => Array.isArray(data.app.divisions?.[d]?.competitors));
   if (!ok) throw new Error('Stored tournament snapshot is malformed');
+  data.app.display.showVotes ??= false; // snapshots written before voting existed
   return data as TournamentSnapshot;
 }
 

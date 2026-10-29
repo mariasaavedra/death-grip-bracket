@@ -7,6 +7,7 @@ import type { Match } from 'brackets-model';
 import { BracketViewer } from './bracket-viewer.tsx';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
 import { OptionSelect } from './option-select.tsx';
 import { Button } from '@/components/ui/button';
 import { Card, CardFooter } from '@/components/ui/card';
@@ -16,6 +17,8 @@ import type { BracketSide } from '../lib/tournament/selectors.ts';
 import { championName, completedMatches, eligibleMatches, eliminatedIds, matchLabel, matchSide, participantName, records, standings, stageMatches } from '../lib/tournament/selectors.ts';
 import type { BracketsData, CompetitorStatus, DisplayMode, DivisionId, TournamentState } from '../lib/tournament/types.ts';
 import { useTournamentState } from '../lib/use-tournament-state.ts';
+import type { VoteInfo } from '../lib/tournament/votes.ts';
+import { useVoteInfo } from '../lib/use-vote-info.ts';
 
 type Id = number | string;
 
@@ -97,6 +100,52 @@ function SideColumns({
   );
 }
 
+/** Open/close/clear the best-ring-name vote for one division. Admin sees live counts. */
+function VotingSection({ division }: { division: DivisionId }) {
+  const { info, setInfo } = useVoteInfo(division, 3000);
+  const [error, setError] = useState('');
+
+  async function send(method: 'PATCH' | 'DELETE', body?: object) {
+    const res = await fetch(`/api/vote/${division}`, { method, body: body ? JSON.stringify(body) : undefined });
+    const json = (await res.json()) as VoteInfo & { error?: { message?: string } };
+    if (res.ok) {
+      setInfo(json);
+      setError('');
+    } else setError(json.error?.message ?? 'Request failed');
+  }
+
+  const ranked = [...(info?.candidates ?? [])].sort((a, b) => (info?.counts?.[b.id] ?? 0) - (info?.counts?.[a.id] ?? 0) || a.name.localeCompare(b.name));
+  return (
+    <section className="panel">
+      <h2 className="mt-0 text-xl">Best ring name vote — {DIVISION_NAMES[division]}</h2>
+      {error && <p role="alert" className="alert">{error}</p>}
+      <div className="flex flex-wrap items-center gap-3">
+        <Badge className={info?.status === 'open' ? 'bg-green-600 text-white' : ''} variant={info?.status === 'open' ? 'default' : 'secondary'}>
+          {info?.status === 'open' ? 'Voting open' : 'Voting closed'}
+        </Badge>
+        <span className="text-sm">{info?.total ?? 0} ballots</span>
+        {info?.status === 'open' ? (
+          <Button onClick={() => send('PATCH', { status: 'closed' })}>Close voting</Button>
+        ) : (
+          <Button onClick={() => send('PATCH', { status: 'open' })}>Open voting</Button>
+        )}
+        <button className="btn btn-sm btn-undo" onClick={() => window.confirm('Delete all ballots for this division?') && send('DELETE')}>
+          Clear votes
+        </button>
+        <span className="text-sm text-muted-foreground">Voters use /vote/{division}</span>
+      </div>
+      <ul className="m-0 mt-3 list-none p-0 [&>li]:flex [&>li]:justify-between [&>li]:border-b [&>li]:border-ink/20 [&>li]:py-1.5">
+        {ranked.map((c) => (
+          <li key={c.id}>
+            <span>{c.name}{c.status === 'alternate' ? ' (alternate)' : ''}</span>
+            <strong>{info?.counts?.[c.id] ?? 0}</strong>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 function Login() {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -169,6 +218,9 @@ function Console() {
     })
     .sort((x, y) => (rankOf ? (x.rank ?? Infinity) - (y.rank ?? Infinity) || x.c.name.localeCompare(y.c.name) : 0));
   const displayStage = app.divisions[app.display.division].stageId;
+  const showingGuide = app.display.mode === 'guide';
+  // Voting controls follow what's on screen while the vote view is up; otherwise the division being managed.
+  const votingDivision = app.display.mode === 'vote' ? app.display.division : division;
   const opponentName = (id: number | string | null | undefined) => participantName(brackets, id) ?? 'TBD';
 
   async function addCompetitor(e: FormEvent) {
@@ -201,38 +253,56 @@ function Console() {
         <h2 className="mt-0 text-xl">Display control</h2>
         <div className="flex flex-wrap items-center gap-3">
           <OptionSelect
-            className="w-56"
-            value={app.display.division}
-            onChange={(v) => call('PATCH', '/api/display', { division: v })}
-            options={DIVISION_IDS.map((d) => ({ value: d, label: DIVISION_NAMES[d] }))}
-          />
-          <OptionSelect
-            className="w-40"
-            value={app.display.mode}
-            onChange={(v) => call('PATCH', '/api/display', { mode: v as DisplayMode })}
+            className="w-64"
+            value={showingGuide ? 'guide' : app.display.division}
+            onChange={(v) =>
+              call('PATCH', '/api/display', v === 'guide' ? { mode: 'guide' } : { division: v, mode: showingGuide ? 'bracket' : app.display.mode })
+            }
             options={[
-              { value: 'matchup', label: 'Matchup' },
-              { value: 'bracket', label: 'Bracket' },
-              { value: 'champion', label: 'Champion' },
+              { value: 'guide', label: 'Guide', group: 'Event' },
+              ...DIVISION_IDS.map((d) => ({ value: d, label: DIVISION_NAMES[d], group: 'Division' })),
             ]}
           />
-          <OptionSelect
-            className="w-72"
-            value={app.display.matchId === null ? 'none' : String(app.display.matchId)}
-            onChange={(v) => call('PATCH', '/api/display', { matchId: v === 'none' ? null : Number(v) })}
-            options={[
-              { value: 'none', label: 'No match selected' },
-              ...stageMatches(brackets, displayStage)
-                .filter((m) => m.opponent1?.id != null || m.opponent2?.id != null)
-                .map((m) => ({
-                  value: String(m.id),
-                  group: matchLabel(brackets, m),
-                  label: `${opponentName(m.opponent1?.id)} vs ${opponentName(m.opponent2?.id)}`,
-                })),
-            ]}
-          />
+          {!showingGuide && (
+            <>
+              <OptionSelect
+                className="w-40"
+                value={app.display.mode}
+                onChange={(v) => call('PATCH', '/api/display', { mode: v as DisplayMode })}
+                options={[
+                  { value: 'matchup', label: 'Matchup' },
+                  { value: 'bracket', label: 'Bracket' },
+                  { value: 'champion', label: 'Champion' },
+                  { value: 'vote', label: 'Vote (best ring name)' },
+                ]}
+              />
+              <OptionSelect
+                className="w-72"
+                value={app.display.matchId === null ? 'none' : String(app.display.matchId)}
+                onChange={(v) => call('PATCH', '/api/display', { matchId: v === 'none' ? null : Number(v) })}
+                options={[
+                  { value: 'none', label: 'No match selected' },
+                  ...stageMatches(brackets, displayStage)
+                    .filter((m) => m.opponent1?.id != null || m.opponent2?.id != null)
+                    .map((m) => ({
+                      value: String(m.id),
+                      group: matchLabel(brackets, m),
+                      label: `${opponentName(m.opponent1?.id)} vs ${opponentName(m.opponent2?.id)}`,
+                    })),
+                ]}
+              />
+            </>
+          )}
+          {app.display.mode === 'vote' && (
+            <label className="flex items-center gap-2 text-sm">
+              <Switch checked={app.display.showVotes} onCheckedChange={(checked) => call('PATCH', '/api/display', { showVotes: checked })} />
+              Show vote results on display
+            </label>
+          )}
         </div>
       </section>
+
+      {app.divisions[votingDivision].status !== 'registration' && <VotingSection key={votingDivision} division={votingDivision} />}
 
       <section className="panel">
         <h2 className="mt-0 text-xl">Registration — {DIVISION_NAMES[division]}</h2>

@@ -8,7 +8,7 @@ describe('storage', () => {
     const db = createTestDb();
     const first = await loadState(db);
     expect(first.version).toBe(0);
-    expect(first.app.display).toEqual({ division: 'femmes', mode: 'matchup', matchId: null });
+    expect(first.app.display).toEqual({ division: 'femmes', mode: 'matchup', matchId: null, showVotes: false });
     await registerCompetitor(db, { division: 'femmes', name: 'A', status: 'active', expectedVersion: 0 });
     expect((await loadState(db)).app.divisions.femmes.competitors).toHaveLength(1);
   });

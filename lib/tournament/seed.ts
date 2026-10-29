@@ -2,6 +2,7 @@ import { DIVISION_IDS } from './constants.ts';
 import { addCompetitor, createDivisionStage, mutate } from './service.ts';
 import { realisticEntrants } from './fixtures.ts';
 import { loadState } from './storage.ts';
+import { deleteAllVotes } from './votes.ts';
 
 /** Seeds both brackets in one mutation. `fresh` discards any existing snapshot. */
 async function runSeed(db: D1Database, version: number, fresh: boolean) {
@@ -14,7 +15,7 @@ async function runSeed(db: D1Database, version: number, fresh: boolean) {
         for (const name of entrants[division]) addCompetitor(ctx.app, division, name, 'active');
         await createDivisionStage(ctx, division, { randomize: false });
       }
-      ctx.app.display = { division: 'femmes', mode: 'bracket', matchId: null };
+      ctx.app.display = { division: 'femmes', mode: 'bracket', matchId: null, showVotes: false };
     },
     { fresh },
   );
@@ -33,5 +34,6 @@ export async function seedTournament(db: D1Database): Promise<{ seeded: boolean;
 export async function resetTournament(db: D1Database): Promise<{ version: number }> {
   const current = await loadState(db);
   const next = await runSeed(db, current.version, true);
+  await deleteAllVotes(db);
   return { version: next.version };
 }
