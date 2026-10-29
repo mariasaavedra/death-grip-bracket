@@ -2,11 +2,100 @@
 
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import type { ReactNode } from 'react';
+import type { Match } from 'brackets-model';
 import { BracketViewer } from './bracket-viewer.tsx';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { OptionSelect } from './option-select.tsx';
+import { Button } from '@/components/ui/button';
+import { Card, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ACTIVE_LIMIT, ALTERNATE_LIMIT, DIVISION_IDS, DIVISION_NAMES } from '../lib/tournament/constants.ts';
-import { championName, completedMatches, eligibleMatches, eliminatedIds, matchLabel, participantName, stageMatches } from '../lib/tournament/selectors.ts';
-import type { CompetitorStatus, DisplayMode, DivisionId, TournamentState } from '../lib/tournament/types.ts';
+import type { BracketSide } from '../lib/tournament/selectors.ts';
+import { championName, completedMatches, eligibleMatches, eliminatedIds, matchLabel, matchSide, participantName, records, standings, stageMatches } from '../lib/tournament/selectors.ts';
+import type { BracketsData, CompetitorStatus, DisplayMode, DivisionId, TournamentState } from '../lib/tournament/types.ts';
 import { useTournamentState } from '../lib/use-tournament-state.ts';
+
+type Id = number | string;
+
+function WinnerName({ won, children }: { won: boolean; children: ReactNode }) {
+  return won ? <mark className="rounded bg-denim px-1.5 py-0.5 font-semibold text-white">{children}</mark> : <span>{children}</span>;
+}
+
+/** Groups matches under their round label so each label is shown once. */
+function groupByLabel(matches: Match[], label: (m: Match) => string): [string, Match[]][] {
+  const groups = new Map<string, Match[]>();
+  for (const m of matches) groups.set(label(m), [...(groups.get(label(m)) ?? []), m]);
+  return [...groups];
+}
+
+/** One match as a two-row card; tapping a row picks that competitor, Confirm appears right under the card. */
+function MatchCard({
+  opponents,
+  pickedId,
+  onPick,
+  onConfirm,
+}: {
+  opponents: { id: Id; name: string }[];
+  pickedId: Id | null;
+  onPick: (id: Id) => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Card className="w-full gap-0 py-0">
+      {opponents.map((o, i) => (
+        <button
+          key={String(o.id)}
+          aria-pressed={pickedId === o.id}
+          onClick={() => onPick(o.id)}
+          className={`flex min-h-14 w-full items-center justify-between px-4 text-left text-lg transition-colors ${i > 0 ? 'border-t border-border' : ''} ${
+            pickedId === o.id ? 'bg-denim text-white' : 'hover:bg-mist'
+          }`}
+        >
+          <span>{o.name}</span>
+          <span className="label text-xs">{pickedId === o.id ? 'Winner ✓' : ''}</span>
+        </button>
+      ))}
+      {pickedId !== null && (
+        <CardFooter className="border-t bg-muted/50 p-2">
+          <Button className="h-12 w-full text-base" onClick={onConfirm}>
+            Confirm winner
+          </Button>
+        </CardFooter>
+      )}
+    </Card>
+  )
+}
+
+/** Winners and losers side by side; the grand final spans both columns underneath. */
+function SideColumns({
+  matches,
+  brackets,
+  render,
+}: {
+  matches: Match[];
+  brackets: BracketsData;
+  render: (label: string, group: Match[]) => ReactNode;
+}) {
+  const column = (side: BracketSide, title: string) => {
+    const groups = groupByLabel(matches.filter((m) => matchSide(brackets, m) === side), (m) => matchLabel(brackets, m));
+    return (
+      <div>
+        <h3 className="mb-1 border-b border-ink pb-1 text-denim">{title}</h3>
+        {groups.length === 0 ? <p className="text-sm text-muted-foreground">None</p> : groups.map(([label, group]) => render(label, group))}
+      </div>
+    );
+  };
+  const final = groupByLabel(matches.filter((m) => matchSide(brackets, m) === 'final'), (m) => matchLabel(brackets, m));
+  return (
+    <div className="mt-4 grid gap-8 md:grid-cols-2">
+      {column('winners', 'Winners bracket')}
+      {column('losers', 'Losers bracket')}
+      {final.length > 0 && <div className="md:col-span-2">{final.map(([label, group]) => render(label, group))}</div>}
+    </div>
+  );
+}
 
 function Login() {
   const [pin, setPin] = useState('');
@@ -18,13 +107,13 @@ function Login() {
     else setError('Incorrect PIN');
   }
   return (
-    <main>
-      <h1>Director login</h1>
+    <main className="mx-auto max-w-md p-10">
+      <h1 className="text-2xl">Director login</h1>
       <form onSubmit={submit}>
-        <input type="password" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="PIN" autoFocus />
-        <button type="submit">Enter</button>
+        <Input className="mb-3 h-10 w-40" type="password" inputMode="numeric" value={pin} onChange={(e) => setPin(e.target.value)} placeholder="PIN" autoFocus />
+        <button className="btn" type="submit">Enter</button>
       </form>
-      {error && <p role="alert">{error}</p>}
+      {error && <p role="alert" className="alert">{error}</p>}
     </main>
   );
 }
@@ -43,7 +132,7 @@ function Console() {
   const [matchId, setMatchId] = useState<number | null>(null);
   const [winnerId, setWinnerId] = useState<number | string | null>(null);
 
-  if (!state) return <main><p>Loading…</p></main>;
+  if (!state) return <main className="p-10 label">Loading…</main>;
 
   /** All writes go through here: sends the revision we last saw and handles 409 explicitly (never retried). */
   async function call(method: string, url: string, body: Record<string, unknown>): Promise<boolean> {
@@ -69,8 +158,16 @@ function Console() {
   const alternates = div.competitors.filter((c) => c.status === 'alternate');
   const eligible = eligibleMatches(brackets, stageId);
   const done = completedMatches(brackets, stageId);
-  const selected = eligible.find((m) => m.id === matchId);
   const eliminated = eliminatedIds(brackets, stageId);
+  const recordOf = records(brackets, stageId);
+  const rankOf = standings(brackets, stageId);
+  // Once results exist, the roster is ordered by standing; alternates (no bracket slot) go last.
+  const roster = div.competitors
+    .map((c) => {
+      const pid = brackets.participant.find((p) => p.name === c.name)?.id;
+      return { c, pid, rank: pid === undefined ? undefined : rankOf?.get(pid) };
+    })
+    .sort((x, y) => (rankOf ? (x.rank ?? Infinity) - (y.rank ?? Infinity) || x.c.name.localeCompare(y.c.name) : 0));
   const displayStage = app.divisions[app.display.division].stageId;
   const opponentName = (id: number | string | null | undefined) => participantName(brackets, id) ?? 'TBD';
 
@@ -79,64 +176,112 @@ function Console() {
     if (await call('POST', '/api/competitors', { division, name, status: newStatus })) setName('');
   }
 
-  async function confirmWinner() {
-    if (!selected || winnerId === null) return;
-    const who = opponentName(winnerId);
-    if (!window.confirm(`Record ${who} as the winner of ${matchLabel(brackets, selected)}?`)) return;
-    if (await call('POST', `/api/matches/${selected.id}/result`, { winnerId })) {
+  async function confirmWinner(m: Match) {
+    if (winnerId === null || matchId !== m.id) return;
+    if (await call('POST', `/api/matches/${m.id}/result`, { winnerId })) {
       setMatchId(null);
       setWinnerId(null);
     }
   }
 
   return (
-    <main>
-      <h1>Tournament director</h1>
-      {offline && <p role="status">Connection lost — retrying.</p>}
-      {message && <p role="alert">{message}</p>}
+    <main className="mx-auto flex max-w-5xl flex-col gap-6 p-6">
+      <h1 className="m-0 text-2xl">Tournament director</h1>
+      {offline && <p role="status" className="alert">Connection lost — retrying.</p>}
+      {message && <p role="alert" className="alert">{message}</p>}
 
-      <p>
-        {DIVISION_IDS.map((d) => (
-          <button key={d} disabled={d === division} onClick={() => { setDivision(d); setMatchId(null); setWinnerId(null); }}>
-            {DIVISION_NAMES[d]} ({app.divisions[d].status})
-          </button>
-        ))}
-      </p>
+      <OptionSelect
+        className="h-12 w-full max-w-md text-lg"
+        value={division}
+        onChange={(v) => { setDivision(v as DivisionId); setMatchId(null); setWinnerId(null); }}
+        options={DIVISION_IDS.map((d) => ({ value: d, label: `${DIVISION_NAMES[d]} (${app.divisions[d].status})` }))}
+      />
 
-      <section>
-        <h2>Registration — {DIVISION_NAMES[division]}</h2>
+      <section className="panel">
+        <h2 className="mt-0 text-xl">Display control</h2>
+        <div className="flex flex-wrap items-center gap-3">
+          <OptionSelect
+            className="w-56"
+            value={app.display.division}
+            onChange={(v) => call('PATCH', '/api/display', { division: v })}
+            options={DIVISION_IDS.map((d) => ({ value: d, label: DIVISION_NAMES[d] }))}
+          />
+          <OptionSelect
+            className="w-40"
+            value={app.display.mode}
+            onChange={(v) => call('PATCH', '/api/display', { mode: v as DisplayMode })}
+            options={[
+              { value: 'matchup', label: 'Matchup' },
+              { value: 'bracket', label: 'Bracket' },
+              { value: 'champion', label: 'Champion' },
+            ]}
+          />
+          <OptionSelect
+            className="w-72"
+            value={app.display.matchId === null ? 'none' : String(app.display.matchId)}
+            onChange={(v) => call('PATCH', '/api/display', { matchId: v === 'none' ? null : Number(v) })}
+            options={[
+              { value: 'none', label: 'No match selected' },
+              ...stageMatches(brackets, displayStage)
+                .filter((m) => m.opponent1?.id != null || m.opponent2?.id != null)
+                .map((m) => ({
+                  value: String(m.id),
+                  group: matchLabel(brackets, m),
+                  label: `${opponentName(m.opponent1?.id)} vs ${opponentName(m.opponent2?.id)}`,
+                })),
+            ]}
+          />
+        </div>
+      </section>
+
+      <section className="panel">
+        <h2 className="mt-0 text-xl">Registration — {DIVISION_NAMES[division]}</h2>
         <p>
           Active {active.length}/{ACTIVE_LIMIT} · Alternates {alternates.length}/{ALTERNATE_LIMIT}
         </p>
-        <ul>
-          {div.competitors.map((c) => (
-            <li key={c.id}>
-              {c.name} [{c.status}]{' '}
-              {div.status === 'registration' ? (
-                <>
-                  <button onClick={() => { const n = window.prompt('Ring name', c.name); if (n !== null) call('PATCH', `/api/competitors/${c.id}`, { name: n }); }}>Rename</button>
-                  <button onClick={() => call('PATCH', `/api/competitors/${c.id}`, { status: c.status === 'active' ? 'alternate' : 'active' })}>
-                    Make {c.status === 'active' ? 'alternate' : 'active'}
-                  </button>
-                  <button onClick={() => call('DELETE', `/api/competitors/${c.id}`, {})}>Remove</button>
-                </>
-              ) : (
-                c.status === 'active' && stageId !== null && eliminated.includes(brackets.participant.find((p) => p.name === c.name)?.id ?? -1) && <em>eliminated</em>
-              )}
-            </li>
-          ))}
+        <ul className="m-0 list-none p-0 [&>li]:border-b [&>li]:border-ink/20 [&>li]:py-2">
+          {roster.map(({ c, pid, rank }) => {
+            const r = (pid !== undefined && recordOf.get(pid)) || { wins: 0, losses: 0 };
+            return (
+              <li key={c.id} className="flex flex-wrap items-center gap-2">
+                {rank !== undefined && <span className="label w-8 text-sm text-denim">#{rank}</span>}
+                <span className="text-lg">{c.name}</span>
+                {c.status === 'alternate' ? (
+                  <Badge variant="secondary" className="bg-muted text-muted-foreground">Alternate</Badge>
+                ) : pid !== undefined && eliminated.includes(pid) ? (
+                  <Badge variant="destructive">Eliminated</Badge>
+                ) : (
+                  <Badge className="bg-green-600 text-white">Active</Badge>
+                )}
+                {stageId !== null && c.status === 'active' && (
+                  <Badge variant="outline" title="Wins / losses">{r.wins}/{r.losses}</Badge>
+                )}
+                {div.status === 'registration' && (
+                  <>
+                    <button className="btn" onClick={() => { const n = window.prompt('Ring name', c.name); if (n !== null) call('PATCH', `/api/competitors/${c.id}`, { name: n }); }}>Rename</button>
+                    <button className="btn" onClick={() => call('PATCH', `/api/competitors/${c.id}`, { status: c.status === 'active' ? 'alternate' : 'active' })}>
+                      Make {c.status === 'active' ? 'alternate' : 'active'}
+                    </button>
+                    <button className="btn" onClick={() => call('DELETE', `/api/competitors/${c.id}`, {})}>Remove</button>
+                  </>
+                )}
+              </li>
+            );
+          })}
         </ul>
         {div.status === 'registration' && (
           <>
-            <form onSubmit={addCompetitor}>
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ring name" />
-              <select value={newStatus} onChange={(e) => setNewStatus(e.target.value as CompetitorStatus)}>
-                <option value="active">Active</option>
-                <option value="alternate">Alternate</option>
-              </select>
-              <button type="submit">Add</button>
+            <form onSubmit={addCompetitor} className="mt-3 flex flex-wrap items-center gap-2">
+              <Input className="h-9 w-56" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ring name" />
+              <OptionSelect
+                className="w-36"
+                value={newStatus}
+                onChange={(v) => setNewStatus(v as CompetitorStatus)}
+                options={[{ value: 'active', label: 'Active' }, { value: 'alternate', label: 'Alternate' }]}
+              />
+              <button className="btn" type="submit">Add</button>
             </form>
-            <button disabled={active.length !== ACTIVE_LIMIT} onClick={() => call('POST', `/api/divisions/${division}/start`, {})}>
+            <button className="btn" disabled={active.length !== ACTIVE_LIMIT} onClick={() => call('POST', `/api/divisions/${division}/start`, {})}>
               Start bracket
             </button>
           </>
@@ -144,75 +289,73 @@ function Console() {
       </section>
 
       {div.status !== 'registration' && (
-        <section>
-          <h2>Match control</h2>
+        <section className="panel">
+          <h2 className="mt-0 text-xl">Match control</h2>
           {div.status === 'completed' && <p>Champion: <strong>{championName(brackets, stageId)}</strong></p>}
-          <h3>Eligible matches</h3>
-          {eligible.length === 0 && <p>None right now.</p>}
-          <ul>
-            {eligible.map((m) => (
-              <li key={String(m.id)}>
-                <button disabled={m.id === matchId} onClick={() => { setMatchId(Number(m.id)); setWinnerId(null); }}>
-                  {matchLabel(brackets, m)}: {opponentName(m.opponent1?.id)} vs {opponentName(m.opponent2?.id)}
-                </button>
-              </li>
-            ))}
-          </ul>
-          {selected && (
-            <div>
-              <h3>Select winner — {matchLabel(brackets, selected)}</h3>
-              {[selected.opponent1, selected.opponent2].map((o) => (
-                <button key={String(o!.id)} aria-pressed={winnerId === o!.id} onClick={() => setWinnerId(o!.id)}>
-                  {winnerId === o!.id ? '✓ ' : ''}{opponentName(o!.id)}
-                </button>
-              ))}
-              <p><button disabled={winnerId === null} onClick={confirmWinner}>Confirm winner</button></p>
-            </div>
-          )}
-          <h3>Completed matches (correct a result)</h3>
-          <ul>
-            {done.map((m) => (
-              <li key={String(m.id)}>
-                {matchLabel(brackets, m)}: {opponentName(m.opponent1?.id)} vs {opponentName(m.opponent2?.id)} — winner{' '}
-                {opponentName(m.opponent1?.result === 'win' ? m.opponent1.id : m.opponent2?.id)}{' '}
-                <button onClick={() => window.confirm('Clear this result?') && call('POST', `/api/matches/${m.id}/reset`, {})}>Undo</button>
-              </li>
-            ))}
-          </ul>
-          <h3>Bracket</h3>
-          <BracketViewer brackets={brackets} stageId={stageId} />
+          <Tabs defaultValue="ready" className="mt-4">
+            <TabsList>
+              <TabsTrigger value="ready">Ready ({eligible.length})</TabsTrigger>
+              <TabsTrigger value="completed">Completed ({done.length})</TabsTrigger>
+              <TabsTrigger value="bracket">Bracket</TabsTrigger>
+            </TabsList>
+            <TabsContent value="ready">
+          {eligible.length === 0 && <p>No matches ready right now.</p>}
+          <SideColumns
+            matches={eligible}
+            brackets={brackets}
+            render={(label, matches) => (
+              <div key={label}>
+                <h3 className="mb-2 mt-4">{label}</h3>
+                <div className="flex flex-col gap-3">
+                  {matches.map((m) => (
+                    <MatchCard
+                      key={String(m.id)}
+                      opponents={[m.opponent1, m.opponent2].map((o) => ({ id: o!.id!, name: opponentName(o!.id) }))}
+                      pickedId={matchId === m.id ? winnerId : null}
+                      onPick={(id) => { setMatchId(Number(m.id)); setWinnerId(id); }}
+                      onConfirm={() => confirmWinner(m)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+          />
+            </TabsContent>
+            <TabsContent value="completed">
+          {done.length === 0 && <p>No results yet.</p>}
+          <SideColumns
+            matches={done}
+            brackets={brackets}
+            render={(label, matches) => (
+              <div key={label}>
+                <h3 className="mb-1 mt-4">{label}</h3>
+                <ul className="m-0 list-none p-0 [&>li]:border-b [&>li]:border-ink/20 [&>li]:py-2">
+                  {matches.map((m) => (
+                    <li key={String(m.id)}>
+                      <div className="text-lg">
+                        <WinnerName won={m.opponent1?.result === 'win'}>{opponentName(m.opponent1?.id)}</WinnerName>
+                        <span className="label mx-2 text-xs text-muted-foreground">vs</span>
+                        <WinnerName won={m.opponent2?.result === 'win'}>{opponentName(m.opponent2?.id)}</WinnerName>
+                      </div>
+                      <div className="mt-1 flex items-center justify-between gap-3 text-sm">
+                        <span>
+                          Winner: <strong>{opponentName(m.opponent1?.result === 'win' ? m.opponent1.id : m.opponent2?.id)}</strong>
+                        </span>
+                        <button className="btn btn-sm btn-undo" onClick={() => window.confirm('Clear this result?') && call('POST', `/api/matches/${m.id}/reset`, {})}>Undo</button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          />
+            </TabsContent>
+            <TabsContent value="bracket">
+              <BracketViewer brackets={brackets} stageId={stageId} />
+            </TabsContent>
+          </Tabs>
         </section>
       )}
-
-      <section>
-        <h2>Display control</h2>
-        <p>
-          Public division:{' '}
-          <select value={app.display.division} onChange={(e) => call('PATCH', '/api/display', { division: e.target.value })}>
-            {DIVISION_IDS.map((d) => <option key={d} value={d}>{DIVISION_NAMES[d]}</option>)}
-          </select>{' '}
-          Mode:{' '}
-          <select value={app.display.mode} onChange={(e) => call('PATCH', '/api/display', { mode: e.target.value as DisplayMode })}>
-            <option value="matchup">Matchup</option>
-            <option value="bracket">Bracket</option>
-            <option value="champion">Champion</option>
-          </select>{' '}
-          Match:{' '}
-          <select
-            value={app.display.matchId ?? ''}
-            onChange={(e) => call('PATCH', '/api/display', { matchId: e.target.value === '' ? null : Number(e.target.value) })}
-          >
-            <option value="">None</option>
-            {stageMatches(brackets, displayStage)
-              .filter((m) => m.opponent1?.id != null || m.opponent2?.id != null)
-              .map((m) => (
-                <option key={String(m.id)} value={String(m.id)}>
-                  {matchLabel(brackets, m)}: {opponentName(m.opponent1?.id)} vs {opponentName(m.opponent2?.id)}
-                </option>
-              ))}
-          </select>
-        </p>
-      </section>
     </main>
   );
 }

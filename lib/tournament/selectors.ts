@@ -53,6 +53,37 @@ export function lossCounts(brackets: BracketsData, stageId: number | null): Map<
   return losses;
 }
 
+/** Wins and losses per participant, computed from native match results. */
+export function records(brackets: BracketsData, stageId: number | null): Map<number | string, { wins: number; losses: number }> {
+  const out = new Map<number | string, { wins: number; losses: number }>();
+  for (const m of stageMatches(brackets, stageId)) {
+    for (const o of [m.opponent1, m.opponent2]) {
+      if (o?.id == null || (o.result !== 'win' && o.result !== 'loss')) continue;
+      const r = out.get(o.id) ?? { wins: 0, losses: 0 };
+      if (o.result === 'win') r.wins++;
+      else r.losses++;
+      out.set(o.id, r);
+    }
+  }
+  return out;
+}
+
+/**
+ * Standing per participant: 1 + the number of participants strictly ahead (fewer losses, or equal
+ * losses and more wins). Ties share a rank. Null until a match has been completed.
+ */
+export function standings(brackets: BracketsData, stageId: number | null): Map<number | string, number> | null {
+  const recs = records(brackets, stageId);
+  if (recs.size === 0) return null;
+  const ids = brackets.participant
+    .filter((p) => stageMatches(brackets, stageId).some((m) => m.opponent1?.id === p.id || m.opponent2?.id === p.id))
+    .map((p) => p.id);
+  const get = (id: number | string) => recs.get(id) ?? { wins: 0, losses: 0 };
+  const ahead = (a: number | string, b: number | string) =>
+    get(a).losses < get(b).losses || (get(a).losses === get(b).losses && get(a).wins > get(b).wins);
+  return new Map(ids.map((id) => [id, 1 + ids.filter((other) => ahead(other, id)).length]));
+}
+
 export function eliminatedIds(brackets: BracketsData, stageId: number | null): (number | string)[] {
   return [...lossCounts(brackets, stageId)].filter(([, n]) => n >= 2).map(([id]) => id);
 }
@@ -63,6 +94,13 @@ function groupNumberOf(brackets: BracketsData, m: Match): number {
 
 function roundNumberOf(brackets: BracketsData, m: Match): number {
   return brackets.round.find((r: Round) => r.id === m.round_id)?.number ?? 0;
+}
+
+export type BracketSide = 'winners' | 'losers' | 'final';
+
+export function matchSide(brackets: BracketsData, m: Match): BracketSide {
+  const group = groupNumberOf(brackets, m);
+  return group === 1 ? 'winners' : group === 2 ? 'losers' : 'final';
 }
 
 export function matchLabel(brackets: BracketsData, m: Match): string {

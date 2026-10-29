@@ -1,5 +1,5 @@
-export const TOURNAMENT_ID = 'boobash-2026';
-export const TOURNAMENT_NAME = 'Boobash Table Arm Wrestling Championship';
+export const TOURNAMENT_ID = 'death-grip-2026';
+export const TOURNAMENT_NAME = 'Death Grip Arm Wrestling Championship';
 export const BRACKET_TOURNAMENT_ID = 0;
 export const D1_DATABASE_ID = 'e5e9a5e2-46c6-4d7e-be0b-a273bd4a7345';
 

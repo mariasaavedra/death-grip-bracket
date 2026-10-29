@@ -1,23 +1,17 @@
 import { DIVISION_IDS } from './constants.ts';
 import { addCompetitor, createDivisionStage, mutate } from './service.ts';
+import { realisticEntrants } from './fixtures.ts';
 import { loadState } from './storage.ts';
-import type { DivisionId } from './types.ts';
-
-const PREFIX: Record<DivisionId, string> = { femmes: 'Femme', mascs: 'Masc' };
-
-export const SEED_ENTRANTS: Record<DivisionId, string[]> = {
-  femmes: Array.from({ length: 8 }, (_, i) => `${PREFIX.femmes} ${String(i + 1).padStart(2, '0')}`),
-  mascs: Array.from({ length: 8 }, (_, i) => `${PREFIX.mascs} ${String(i + 1).padStart(2, '0')}`),
-};
 
 /** Seeds both brackets in one mutation. `fresh` discards any existing snapshot. */
 async function runSeed(db: D1Database, version: number, fresh: boolean) {
+  const entrants = realisticEntrants();
   return mutate(
     db,
     version,
     async (ctx) => {
       for (const division of DIVISION_IDS) {
-        for (const name of SEED_ENTRANTS[division]) addCompetitor(ctx.app, division, name, 'active');
+        for (const name of entrants[division]) addCompetitor(ctx.app, division, name, 'active');
         await createDivisionStage(ctx, division, { randomize: false });
       }
       ctx.app.display = { division: 'femmes', mode: 'bracket', matchId: null };
