@@ -94,8 +94,8 @@ function SideColumns({
   const final = groupByLabel(matches.filter((m) => matchSide(brackets, m) === 'final'), (m) => matchLabel(brackets, m));
   return (
     <div className="mt-4 grid gap-8 md:grid-cols-2">
-      {column('winners', 'Winners bracket')}
-      {column('losers', 'Losers bracket')}
+      {column('winners', 'Championship bracket')}
+      {column('losers', 'Elimination bracket')}
       {final.length > 0 && <div className="md:col-span-2">{final.map(([label, group]) => render(label, group))}</div>}
     </div>
   );

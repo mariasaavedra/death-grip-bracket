@@ -29,7 +29,7 @@ export function VoteView({ division }: { division: DivisionId }) {
     <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
       <div className="flex flex-col items-center gap-4 text-center">
         <p className="label m-0 text-sm text-denim">{DIVISION_NAMES[division]}</p>
-        <h2 className="m-0 font-display text-6xl xl:text-7xl">Vote for the best ring name</h2>
+        <h2 className="m-0 font-display text-6xl min-[1600px]:text-7xl">Vote for the best ring name</h2>
         {info?.status === 'open' && origin ? (
           <>
             <QrCode value={url} className="w-64 border border-ink xl:w-80" />
@@ -47,7 +47,7 @@ export function VoteView({ division }: { division: DivisionId }) {
           const winner = top.includes(c.id);
           return (
             <li key={c.id} className={`border border-ink p-4 ${winner ? 'bg-denim text-white' : 'bg-white/60'}`}>
-              <div className="flex items-center justify-between gap-2 text-2xl xl:text-3xl">
+              <div className="flex items-center justify-between gap-2 text-2xl min-[1600px]:text-4xl">
                 <span className={winner ? 'font-bold' : ''}>{c.name}</span>
                 {c.status === 'alternate' && <Badge variant="outline">Alternate</Badge>}
               </div>

@@ -165,32 +165,6 @@
     opacity: 0.45;
     mix-blend-mode: overlay;
   }
-  /* Header strip: very dark grey easing to a slightly lighter dark grey, with grain. */
-  .band-dark {
-    position: relative;
-    isolation: isolate;
-    background: linear-gradient(90deg, #0c0c0d 0%, #1a1a1c 50%, #2b2b2e 100%);
-    color: #fff;
-  }
-  .band-dark::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image: var(--grain);
-    background-size: 182px;
-    opacity: 0.3;
-    filter: grayscale(1);
-  }
-  /* Curtain fringe under the guide banner. */
-  .fringe {
-    height: 1.4rem;
-    background: repeating-linear-gradient(90deg, var(--color-ink) 0 1px, transparent 1px 5px);
-    -webkit-mask: linear-gradient(#000 60%, transparent);
-    mask: linear-gradient(#000 60%, transparent);
-    border-top: 2px solid var(--color-ink);
-  }
   .frame {
     border: 1px solid rgb(255 255 255 / 0.85);
     outline: 1px solid rgb(255 255 255 / 0.45);
@@ -284,14 +258,13 @@ div.brackets-viewer {
   --text-size: 1rem;
   background: transparent;
   font-family: var(--font-sans), sans-serif;
+  /* The viewer ships `margin: 0 auto; padding: 10px 50px`, which centres and indents the bracket. */
+  margin: 0;
+  padding: 0;
 }
+/* The division is already named by the progress label (and the admin's own controls). */
 div.brackets-viewer h1 {
-  font-family: var(--font-display);
-  font-size: 2.45rem;
-  font-weight: 500;
-  letter-spacing: -0.035em;
-  line-height: 0.95;
-  margin: 0 0 0.75rem;
+  display: none;
 }
 div.brackets-viewer .bracket h2 {
   font-family: var(--font-label);
@@ -309,13 +282,13 @@ div.brackets-viewer h3 {
   color: var(--color-ink);
   border: 1px solid var(--color-ink);
   font-family: var(--font-label);
-  font-size: 0.75rem;
+  font-size: 0.6rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   border-radius: 2px;
-  padding: 0.42rem 0;
-  margin-bottom: 0.3rem;
+  padding: 0.15rem 0;
+  margin-bottom: 0.2rem;
 }
 div.brackets-viewer .opponents {
   overflow: hidden;
@@ -365,9 +338,68 @@ div.brackets-viewer .participant.loss .name {
 div.brackets-viewer .match {
   margin: 7px 0;
 }
+@media (min-width: 1600px) {
+  div.brackets-viewer .match {
+    margin: 13px 0;
+  }
+}
 div.brackets-viewer .bracket .rounds:not(:last-of-type) {
   margin-bottom: 10px;
 }
 div.brackets-viewer {
   --round-margin: 2.25rem;
+}
+
+/* TV-sized screens: spend the spare width on larger, easier-to-read matches. */
+@media (min-width: 1600px) {
+  div.brackets-viewer {
+    --match-width: 23rem;
+    --text-size: 1.35rem;
+    --round-margin: 3.5rem;
+    --match-horizontal-padding: 1rem;
+  }
+  div.brackets-viewer .bracket h2 {
+    font-size: 1.1rem;
+  }
+  div.brackets-viewer .participant {
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+  }
+  div.brackets-viewer h3 {
+    font-size: 0.7rem;
+  }
+}
+
+/* Full-HD TVs and wider: spend the spare height and width on larger Championship boxes. */
+@media (min-width: 1900px) {
+  div.brackets-viewer {
+    --match-width: 24rem;
+    --text-size: 1.5rem;
+    --round-margin: 3rem;
+  }
+  div.brackets-viewer .participant {
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+  div.brackets-viewer .match {
+    margin: 16px 0;
+  }
+}
+
+/*
+ * Elimination (the second `section.bracket`): same width and text size as Championship, but shorter
+ * boxes (tighter rows) and less space between matches. Extra specificity so it wins over the TV rules.
+ */
+div.brackets-viewer .bracket:nth-of-type(2) .participant {
+  padding-top: 0.12rem;
+  padding-bottom: 0.12rem;
+  line-height: 1.2;
+}
+div.brackets-viewer .bracket:nth-of-type(2) .match {
+  margin: 5px 0;
+}
+
+/* No gap above the first bracket heading. */
+div.brackets-viewer .bracket:nth-of-type(1) h2 {
+  margin-top: 0;
 }

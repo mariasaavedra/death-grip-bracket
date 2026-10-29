@@ -27,6 +27,10 @@ export function BracketViewer({ brackets, stageId }: { brackets: BracketsData; s
       const matches = brackets.match.filter((m) => m.stage_id === stageId);
       matches.forEach((m) => [m.opponent1?.id, m.opponent2?.id].forEach((id) => id != null && participantIds.add(id)));
       ref.current.innerHTML = '';
+      // Rename the two bracket headings (deep-merged over the viewer's English strings).
+      await window.bracketsViewer.addLocale('en', {
+        common: { 'group-name-winner-bracket': 'Championship', 'group-name-loser-bracket': 'Elimination' },
+      } as never);
       await window.bracketsViewer.render(
         {
           stages: stage,

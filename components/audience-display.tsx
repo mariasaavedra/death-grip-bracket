@@ -30,20 +30,9 @@ export function AudienceDisplay() {
   const match = matchId === null ? undefined : brackets.match.find((m) => m.id === matchId);
 
   return (
-    <main className="mx-auto max-w-[1800px] p-6">
-      <div className="panel min-h-[70vh]">
+    <main className="mx-auto max-w-[1800px] px-3 pb-3 pt-2">
+      <div className="panel flex min-h-[70vh] flex-col px-4 pb-4 pt-2 min-[1600px]:min-h-[calc(100vh-4.5rem)]">
         {mode !== 'bracket' && mode !== 'guide' && mode !== 'vote' && <h1 className="m-0 mb-6 text-4xl">{DIVISION_NAMES[division]}</h1>}
-        {stageId !== null && mode !== 'guide' && mode !== 'vote' && (
-          <Progress
-            value={total === 0 ? 0 : (played / total) * 100}
-            className="mb-6 [&_[data-slot=progress-indicator]]:bg-denim [&_[data-slot=progress-track]]:h-3 [&_[data-slot=progress-track]]:rounded-[2px] [&_[data-slot=progress-indicator]]:rounded-[2px] [&_[data-slot=progress-track]]:bg-ink/15"
-          >
-            <ProgressLabel className="label text-sm">
-              {DIVISION_NAMES[division]} — {played} of {total} matches played
-            </ProgressLabel>
-            <ProgressValue className="label ml-auto text-sm" />
-          </Progress>
-        )}
         {offline && (
           <Badge variant="destructive" role="status" className="mb-4">
             Connection lost — showing last known state
@@ -58,7 +47,7 @@ export function AudienceDisplay() {
           (match ? (
             <section className="py-10 text-center">
               <h2 className="label m-0 text-2xl">{matchLabel(brackets, match)}</h2>
-              <div className="my-12 flex flex-wrap items-center justify-center gap-8 font-display text-7xl leading-tight xl:text-9xl">
+              <div className="my-12 flex flex-wrap items-center justify-center gap-8 font-display text-7xl leading-tight xl:text-12xl">
                 <span>{participantName(brackets, match.opponent1?.id) ?? 'TBD'}</span>
                 <span className="label text-4xl text-denim">vs</span>
                 <span>{participantName(brackets, match.opponent2?.id) ?? 'TBD'}</span>
@@ -76,6 +65,18 @@ export function AudienceDisplay() {
             <h2 className="label m-0 text-3xl">Champion</h2>
             <p className="m-0 mt-8 font-display text-9xl">{championName(brackets, stageId) ?? '—'}</p>
           </section>
+        )}
+
+        {stageId !== null && mode !== 'guide' && mode !== 'vote' && (
+          <Progress
+            value={total === 0 ? 0 : (played / total) * 100}
+            className="mt-auto pt-8 [&_[data-slot=progress-indicator]]:bg-denim [&_[data-slot=progress-track]]:h-3 [&_[data-slot=progress-track]]:rounded-[2px] [&_[data-slot=progress-indicator]]:rounded-[2px] [&_[data-slot=progress-track]]:bg-ink/15"
+          >
+            <ProgressLabel className="label text-sm min-[1600px]:text-xl">
+              {DIVISION_NAMES[division]} — {played} of {total} matches played
+            </ProgressLabel>
+            <ProgressValue className="label ml-auto text-sm min-[1600px]:text-xl" />
+          </Progress>
         )}
       </div>
     </main>

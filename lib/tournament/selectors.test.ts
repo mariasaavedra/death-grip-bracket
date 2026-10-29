@@ -13,7 +13,7 @@ describe('selectors', () => {
     const s = await loadState(db);
     const stageId = s.app.divisions.femmes.stageId;
     expect(championName(s.brackets, stageId)).toBeNull();
-    expect(eligibleMatches(s.brackets, stageId).map((m) => matchLabel(s.brackets, m))).toEqual(Array(4).fill('Winners Round 1'));
+    expect(eligibleMatches(s.brackets, stageId).map((m) => matchLabel(s.brackets, m))).toEqual(Array(4).fill('Championship Round 1'));
     expect(eligibleMatches(s.brackets, null)).toEqual([]);
   });
 

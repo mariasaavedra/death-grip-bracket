@@ -106,8 +106,8 @@ export function matchSide(brackets: BracketsData, m: Match): BracketSide {
 export function matchLabel(brackets: BracketsData, m: Match): string {
   const group = groupNumberOf(brackets, m);
   const round = roundNumberOf(brackets, m);
-  if (group === 1) return `Winners Round ${round}`;
-  if (group === 2) return `Losers Round ${round}`;
+  if (group === 1) return `Championship Round ${round}`;
+  if (group === 2) return `Elimination Round ${round}`;
   return round === 1 ? 'Grand Final' : 'Grand Final Reset';
 }
 
