@@ -14,6 +14,10 @@ export default defineConfig({
     env: {
       ASSETS: bindings.assets(),
       IMAGES: bindings.images(),
+      DB: bindings.d1({
+        name: "death-grip-bracket-db",
+        id: "e5e9a5e2-46c6-4d7e-be0b-a273bd4a7345",
+      }),
     },
   }),
 });

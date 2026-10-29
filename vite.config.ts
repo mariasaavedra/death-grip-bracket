@@ -9,6 +9,7 @@ export default defineConfig({
       images: { optimizer: imagesOptimizer() },
     }),
     cloudflare({
+      persistState: { path: ".local-state" },
       viteEnvironment: {
         name: "rsc",
         childEnvironments: ["ssr"],

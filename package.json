@@ -5,6 +5,10 @@
 	"packageManager": "npm@11.9.0",
 	"dependencies": {
 		"@vinext/cloudflare": "latest",
+		"brackets-manager": "^1.11.1",
+		"brackets-memory-db": "^1.0.6",
+		"brackets-model": "^1.7.0",
+		"brackets-viewer": "^1.9.1",
 		"react": "latest",
 		"react-dom": "latest",
 		"react-server-dom-webpack": "latest",
@@ -12,6 +16,7 @@
 	},
 	"devDependencies": {
 		"@cloudflare/vite-plugin": "beta",
+		"@eslint/js": "^9.39.5",
 		"@tailwindcss/postcss": "latest",
 		"@types/node": "latest",
 		"@types/react": "latest",
@@ -19,9 +24,13 @@
 		"@vitejs/plugin-react": "latest",
 		"@vitejs/plugin-rsc": "latest",
 		"cf": "^1.0.0-beta.25",
+		"eslint": "^9.39.5",
+		"eslint-plugin-react-hooks": "^7.1.1",
 		"tailwindcss": "latest",
 		"typescript": "latest",
-		"vite": "8.3.0"
+		"typescript-eslint": "^8.72.1",
+		"vite": "8.3.0",
+		"vitest": "^5.0.5"
 	},
 	"type": "module",
 	"scripts": {
@@ -30,6 +39,15 @@
 		"start": "vite preview",
 		"deploy": "vinext-cloudflare deploy",
 		"preview": "npm run build && npm run start --",
-		"cf-typegen": "cf workers types"
+		"cf-typegen": "cf workers types",
+		"lint": "eslint .",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"db:migrate:local": "cf d1 migrations apply e5e9a5e2-46c6-4d7e-be0b-a273bd4a7345 --local --persist-to .local-state",
+		"db:migrate:remote": "NODE_USE_SYSTEM_CA=1 cf d1 migrations apply e5e9a5e2-46c6-4d7e-be0b-a273bd4a7345",
+		"db:seed:local": "node scripts/seed-local.ts",
+		"db:reset:local": "node scripts/reset-local.ts",
+		"db:query:local": "cf d1 raw e5e9a5e2-46c6-4d7e-be0b-a273bd4a7345 --local --persist-to .local-state --sql"
 	}
 }
