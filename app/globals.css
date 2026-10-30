@@ -10,6 +10,7 @@
   --color-navy: #1b2748;
   --color-mist: #cfdcf0;
   --color-foul: #b3261e;
+  --color-blood: #3f0002;
   /* High-contrast condensed serif for headings (system Didone stack; no web font fetch). */
   --font-display: "Bodoni 72", "Bodoni MT", Didot, "Playfair Display", "Times New Roman", serif;
   /* Heavy grotesk for the bold caps labels. */

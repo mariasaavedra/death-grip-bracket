@@ -57,6 +57,7 @@
 		"db:seed:local": "node scripts/seed-local.ts",
 		"db:reset:local": "node scripts/reset-local.ts --force",
 		"db:query:local": "cf d1 raw e5e9a5e2-46c6-4d7e-be0b-a273bd4a7345 --local --persist-to .local-state --sql",
+		"db:reset:remote": "node scripts/reset-remote.ts",
 		"db:seed:remote": "node scripts/seed-remote.ts",
 		"release": "npm run db:migrate:remote && npm run db:seed:remote -- --confirm-remote && npm run deploy"
 	}

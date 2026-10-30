@@ -37,7 +37,7 @@ export function GuideView({ divisions }: { divisions: AppState['divisions'] }) {
         </div>
 
         <section className="border-t border-ink pt-6">
-          <h2 className="m-0 mb-4 text-center font-display text-3xl tracking-tighter xl:text-4xl min-[1900px]:mb-6 min-[1900px]:text-5xl">Scan to register</h2>
+          <h2 className="m-0 mb-4 label text-center text-2xl xl:text-xl min-[1900px]:mb-6 min-[1900px]:text-4xl">Scan to register</h2>
           <div className="grid grid-cols-2 gap-6">
             {DIVISION_IDS.map((d) => {
               const roster = divisions[d].competitors;
@@ -47,7 +47,7 @@ export function GuideView({ divisions }: { divisions: AppState['divisions'] }) {
               const url = `${origin}/register/${d}`;
               return (
                 <div key={d} className="flex flex-col items-center gap-2 text-center">
-                  <h3 className="m-0 font-display text-3xl normal-case tracking-tighter min-[1900px]:text-4xl">{DIVISION_NAMES[d].replace(' Championship', '')}</h3>
+                  <h3 className="m-0 font-(family-name:--font-metal) font-normal text-3xl normal-case tracking-normal min-[1900px]:text-4xl">{DIVISION_NAMES[d].replace(' Championship', '')}</h3>
                   {open && origin ? (
                     <QrCode value={url} className="w-full max-w-[17rem] border border-ink min-[1600px]:max-w-[19rem] min-[1900px]:max-w-[23rem]" />
                   ) : (
@@ -70,7 +70,18 @@ export function GuideView({ divisions }: { divisions: AppState['divisions'] }) {
       <div className="flex flex-col gap-8 min-[1900px]:gap-12">
         {GUIDE_SECTIONS.map((section) => (
           <section key={section.label} className="grid grid-cols-[7rem_1fr] gap-6 xl:grid-cols-[9rem_1fr] min-[1900px]:grid-cols-[12rem_1fr]">
-            <h3 className="m-0 font-display text-3xl normal-case tracking-tighter xl:text-4xl min-[1900px]:text-5xl">{section.label}</h3>
+            <h3 className="m-0 font-(family-name:--font-metal) font-normal text-3xl normal-case tracking-normal xl:text-4xl min-[1900px]:text-5xl">
+              {section.label === 'Prizes' ? (
+                <span className="relative inline-block px-3 py-1">
+                  {/* Two slightly offset, tilted ellipses for a hand-inked loop. */}
+                  <span aria-hidden className="pointer-events-none absolute -inset-x-2 -inset-y-1 -rotate-[8deg] rounded-[50%] border-2 border-blood" />
+                  <span aria-hidden className="pointer-events-none absolute -inset-x-3 inset-y-0 -rotate-[3deg] rounded-[50%] border border-blood" />
+                  <span className="relative">{section.label}</span>
+                </span>
+              ) : (
+                section.label
+              )}
+            </h3>
             <div className="text-xl leading-snug xl:text-2xl min-[1900px]:text-3xl">
               {section.lines.map((line) => (
                 <p

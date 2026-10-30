@@ -11,7 +11,7 @@ export const GUIDE_SECTIONS: GuideSection[] = [
   {
     label: 'Enter',
     lines: [
-      { kind: 'heading', text: 'Sign up at the check in desk' },
+      { kind: 'heading', text: 'Sign Up' },
       { kind: 'body', text: 'Doors at 8. Registration closes at 9:45' },
       { kind: 'heading', text: 'Pick a ring name' },
       { kind: 'body', text: 'Best ring name wins a drink ticket' },
